@@ -1,48 +1,69 @@
-
-
-class HelloWorld extends React.Component {
+class Posts extends React.Component {
 
   constructor(props) {
     super(props)
     this.state = {
-      data: null
+      posts: this.props.data,
+      newTitle: "",
+      newContent: ""
     }
 
     this.render = this.render.bind(this);
-    this.componentDidMount = this.componentDidMount.bind(this)
+    this.handleTitleChange = this.handleTitleChange.bind(this);
+    this.handleContentChange = this.handleContentChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
   }
 
-  componentDidMount() {
-    fetch("https://yelp-search.herokuapp.com/search?term=pizza&location=philadelphia", { method: "get"})
-    .then(function(response) {
-      return response.json();
-    })
-    .then(function(result) {
-      var businessData = result.businesses
-      this.state.data = businessData
-      this.forceUpdate()
-      console.log(this.state);
-    }.bind(this))
+  handleSubmit(e) {
+    e.preventDefault();
+    axios({
+      method: 'post',
+      url: 'http://127.0.0.1:4567/posts',
+      params: {
+        title: this.state.newTitle,
+          content: this.state.newContent
+      }
+})
+.then(function(response) {
+    this.setState({posts: response.data, newTitle: "", newContent: ""});
+}.bind(this))
+  }
+
+  handleTitleChange(e) {
+    this.setState({newTitle: e.target.value});
+  }
+
+  handleContentChange(e) {
+    this.setState({newContent: e.target.value});
   }
 
   render() {
-    if (this.state.data) {
-        var businesses = this.state.data.map(function(business) {
+      var posts = this.state.posts.map(function(post) {
 
-          return <div>{business.name}</div>
+        return <div>
+                <div key={post.id}>{post.title}</div>
+                <div key={post.content + post.id}>{post.content}</div>
+              </div>
 
-        })
-        return <div>{businesses}</div>
-    }
-    else {
-      return(
-        <div>WAITING!</div>
-      )
-    }
+      })
+      return <div>
+                <div className="hello">{posts}</div>
+                <form onSubmit={this.handleSubmit}>
+                  <input onChange={this.handleTitleChange} value={this.state.newTitle} />
+                  <input onChange={this.handleContentChange} value={this.state.newContent} />
+                  <button>{'Add #' + (this.state.posts.length + 1)}</button>
+                </form>
+             </div>
   }
 };
 
-ReactDOM.render(
-  <HelloWorld />,
-  document.getElementById('react-app')
-);
+
+axios.get("http://127.0.0.1:4567/posts")
+.then(function(response) {
+  var postsList = response.data;
+  ReactDOM.render(
+    <Posts data={postsList} />,
+    document.getElementById('react-app')
+  );
+
+});
